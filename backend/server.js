@@ -62,26 +62,27 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-// Register route with file upload
-app.post('/register', upload.single('avatar'), async (req, res) => {
-    const { username, password } = req.body;
-    const avatar = req.file ? req.file.path.replace('\\', '/') : null; // Handle path separators for Windows
+// // Register route with file upload
+// app.post('/register', upload.single('avatar'), async (req, res) => {
+//     const { username, password } = req.body;
+//     const avatar = req.file ? req.file.path.replace('\\', '/') : null; // Handle path separators for Windows
 
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({ username, password: hashedPassword, avatar });
+//     try {
+//         const hashedPassword = await bcrypt.hash(password, 10);
+//         const user = new User({ username, password: hashedPassword, avatar });
 
-        await user.save();
+//         await user.save();
 
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token, avatar: user.avatar });
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ error: err.message });
-    }
-});
+//         const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+//         res.json({ token, avatar: user.avatar });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(400).json({ error: err.message });
+//     }
+// });
 
 // Login route
+// Register route with file upload
 app.post('/register', upload.single('avatar'), async (req, res) => {
     const { username, password } = req.body;
     const avatar = req.file ? req.file.path.replace(/\\/g, '/') : null; // Ensure path separators are correct
@@ -99,6 +100,27 @@ app.post('/register', upload.single('avatar'), async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 });
+
+
+// Login route
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        const user = await User.findOne({ username });
+        if (!user) return res.status(400).json({ message: 'Invalid username or password' });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ message: 'Invalid username or password' });
+
+        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token, avatar: user.avatar });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 
 
 // Serve static files from the 'uploads' directory
